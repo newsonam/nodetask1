@@ -1,26 +1,27 @@
 require('../db/connection.js');
 require("dotenv").config();
-const Task = require('../model/taskSchema.js');
 const User = require('../model/userSchema.js');
+const Userauth=require('../model/userauth.js');
 const path = require('path');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const auth = require("../middleware/auth");
-const register=async (req, res) => {
+
+const register = async (req, res) => {
     try {
-        let { firstname, email, password } = req.body;
+        let { firstname, email, password} = req.body;
         if (!firstname || !email || !password)
             return res.status(400).json({ msg: "Not all fields have been entered." });
         if (password.length < 5)
             return res.status(400).json({ msg: "The password needs to be at least 5 characters long." });
-       
-        const existingUser = await User.findOne({ email: email });
+
+        const existingUser = await Userauth.findOne({ email: email });
         if (existingUser)
             return res.status(400).json({ msg: "An account with this email already exists." });
         if (!firstname) firstname = email;
         const salt = await bcrypt.genSalt();
         const passwordHash = await bcrypt.hash(password, salt);
-        const newUser = new User({ email, password: passwordHash, firstname });
+        const newUser = new Userauth({ email, password: passwordHash, firstname });
         const savedUser = await newUser.save();
         if (savedUser) {
             return res.status(201).json({ message: "user registered successfully" });
@@ -33,12 +34,12 @@ const register=async (req, res) => {
     }
 };
 
-const login=async (req, res) => {
+const login = async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password)
             return res.status(400).json({ msg: "Not all fields have been entered." });
-        const user = await User.findOne({ email: email });
+        const user = await Userauth.findOne({ email: email });
         if (!user)
             return res.status(400).json({ msg: "No account with this email has been registered." });
         const isMatch = await bcrypt.compare(password, user.password);
@@ -52,9 +53,9 @@ const login=async (req, res) => {
     }
 };
 
-const getTasks= (req, res)=> {
+const getUsers = (req, res) => {
 
-    Task.find(function (err, data) {
+    User.find(function (err, data) {
         if (err) {
             console.log(err);
         }
@@ -67,9 +68,9 @@ const getTasks= (req, res)=> {
 
 };
 
-const getTaskById=async (req, res) => {
+const getUserById = async (req, res) => {
     console.log(req.params.id);
-    Task.findById(req.params.id, function (err, data) {
+    User.findById(req.params.id, function (err, data) {
         if (err) {
             console.log(err);
         }
@@ -82,9 +83,9 @@ const getTaskById=async (req, res) => {
 
 };
 
-const editTaskbyId=async (req, res) => {
+const editUserbyId = async (req, res) => {
     console.log(req.params.id);
-    Task.findById(req.params.id, function (err, data) {
+    User.findById(req.params.id, function (err, data) {
         if (err) {
             console.log(err);
         }
@@ -97,53 +98,58 @@ const editTaskbyId=async (req, res) => {
 
 };
 
-const updateTaskById=(req, res) => {
+const updateUserById = (req, res) => {
     var data = {
-        title: req.body.title,
-        description: req.body.description,
-        duedate: req.body.duedate,
-        status: req.body.status
-
-
+        email: req.body.email,
+        username: req.body.username,
+        age: req.body.age,
+        city: req.body.city,
+        zipcode: req.body.zipcode
     };
-    Task.findByIdAndUpdate(req.params.id, data, { new: true }, function (
+    if (!req.params.id) {
+        return res.status(422).json({ error: "plz provide Id" });
+    }
+    User.findByIdAndUpdate(req.params.id, data, { new: true }, function (
         err,
         data
     ) {
         if (err) {
             console.log("err", err);
-            return res.status(404).json({ error: "Task data not updated" })
+            return res.status(404).json({ error: "User data not updated" })
         } else {
             console.log("success");
-            return res.status(201).json({ message: "Task updated", data });
+            return res.status(201).json({ message: "User updated", data });
         }
     });
 
 };
 
-const postData= async (req, res) => {
-    
-    const { title, description, duedate, status } = req.body;
-    if (!title || !description || !duedate || !status) {
+const postData = async (req, res) => {
+
+    const { email, username, age, city, zipcode } = req.body;
+    if (!email || !username || !age || !city || !zipcode) {
         return res.status(422).json({ error: "plz fill all filled" });
     }
 
-    const taskdata = new Task({ title, description, duedate, status })
-    const taskresult = await taskdata.save();
-    if (taskresult) {
-        return res.status(201).json({ message: "user data posted" });
+    const userdata = new User({ email, username, age, city, zipcode })
+    const userresult = await userdata.save();
+    if (userresult) {
+        return res.status(201).json({ message: "User data posted" });
     }
 };
 
-const deleteTaskById=async (req, res) => {
+const deleteUserById = async (req, res) => {
     console.log(req.params.id);
+    if (!req.params.id) {
+        return res.status(422).json({ error: "plz provide Id" });
+    }
     try {
-        const taskData = await Task.deleteOne
+        const userData = await User.deleteOne
             ({ _id: req.params.id });
 
-        if (taskData) {
+        if (userData) {
 
-            res.status(201).json({ message: "Task deleted" });
+            res.status(201).json({ message: "Userdata deleted" });
         }
     } catch (error) {
         console.log(error);
@@ -151,6 +157,6 @@ const deleteTaskById=async (req, res) => {
 
 };
 
-module.exports={register,login,getTasks,getTaskById,editTaskbyId,updateTaskById ,postData ,deleteTaskById};
+module.exports = { register, login, getUsers, getUserById, editUserbyId, updateUserById, postData, deleteUserById };
 
 
